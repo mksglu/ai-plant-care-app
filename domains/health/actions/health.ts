@@ -3,25 +3,36 @@
 import postgres from 'postgres';
 import { fetchHistoricalWeather, WeatherData } from '../http/client';
 import { Plant } from '../../plant/actions/plant';
-import { analyzeHealthWithAI, AIAnalysisResponse } from '../lib/gemini';
+import { analyzeHealthWithAI } from '../lib/gemini';
+import { getAIAnalysisResponseType } from '../lib/gemini';
+// Create a type definition that extracts the type from the return value of getAIAnalysisResponseType
+type AIAnalysisResponse = NonNullable<Awaited<ReturnType<typeof getAIAnalysisResponseType>>>;
 
 // Get the database connection
 const sql = postgres(process.env.DATABASE_URL || '', {
   ssl: 'require',
 });
 
-// Health status enumeration
-export enum HealthStatus {
-  Good = 'Good',
-  NeedsWater = 'Needs Water',
-  TooMuchWater = 'Too Much Water',
-  LowHumidity = 'Low Humidity',
-  HighHumidity = 'High Humidity',
-  Alert = 'Alert', // Multiple issues
+// Health status as string literals (not exported)
+type HealthStatus = 'Good' | 'Needs Water' | 'Too Much Water' | 'Low Humidity' | 'High Humidity' | 'Alert';
+
+// Constants for health status values (not exported)
+const HealthStatus = {
+  Good: 'Good' as HealthStatus,
+  NeedsWater: 'Needs Water' as HealthStatus,
+  TooMuchWater: 'Too Much Water' as HealthStatus,
+  LowHumidity: 'Low Humidity' as HealthStatus,
+  HighHumidity: 'High Humidity' as HealthStatus,
+  Alert: 'Alert' as HealthStatus, // Multiple issues
+};
+
+// Export the health status as async function
+export async function getHealthStatusValues() {
+  return HealthStatus;
 }
 
 // Health data for a specific day
-export type DailyHealthData = {
+type DailyHealthData = {
   date: string;
   precipitation: number;
   humidity: number;
@@ -32,7 +43,7 @@ export type DailyHealthData = {
 };
 
 // Overall health assessment result
-export type HealthAssessment = {
+type HealthAssessment = {
   plantId: number;
   plantName: string;
   overallStatus: HealthStatus;
@@ -43,8 +54,13 @@ export type HealthAssessment = {
   aiAnalysis?: AIAnalysisResponse; // Optional AI-enhanced analysis
 };
 
+// Export the HealthAssessment type via an async function
+export async function getHealthAssessmentType(): Promise<HealthAssessment | null> {
+  return null; // Just returns null, this is only for type exporting
+}
+
 // Saved health analysis from database
-export type SavedHealthAnalysis = {
+type SavedHealthAnalysis = {
   id: number;
   plant_id: number;
   start_date: string;
@@ -169,10 +185,6 @@ async function convertSavedAnalysisToAIResponse(savedAnalysis: SavedHealthAnalys
   };
 }
 
-/**
- * Fetches plant health assessment based on weather data for the given date range
- * With optional AI analysis if requested
- */
 export async function getPlantHealth(
   plantId: number,
   startDate: string,
@@ -180,11 +192,7 @@ export async function getPlantHealth(
   includeAIAnalysis: boolean = false,
   forceRefreshAI: boolean = false
 ): Promise<HealthAssessment> {
-  console.log('Called getPlantHealth with plantId:', plantId);
   try {
-    console.log(`Fetching health data for plant ID ${plantId} from ${startDate} to ${endDate}`);
-    
-    // Fetch plant details first
     const plants = await sql<Plant[]>`
       SELECT * FROM plant
       WHERE id = ${plantId}
@@ -217,10 +225,8 @@ export async function getPlantHealth(
         }
         
         if (savedAnalysis && !forceRefreshAI) {
-          console.log('Using saved AI analysis from database');
           healthAssessment.aiAnalysis = await convertSavedAnalysisToAIResponse(savedAnalysis);
         } else {
-          console.log('Requesting new AI analysis from Gemini...');
           const aiAnalysis = await analyzeHealthWithAI(plant, healthAssessment);
           healthAssessment.aiAnalysis = aiAnalysis;
           
@@ -391,5 +397,17 @@ async function calculateHealthFromWeatherData(
     startDate,
     endDate,
     dailyData,
+  };
+}
+
+// Export a type helper function
+export async function getHealthStatusType(): Promise<Record<string, HealthStatus>> {
+  return {
+    Good: 'Good',
+    NeedsWater: 'Needs Water',
+    TooMuchWater: 'Too Much Water',
+    LowHumidity: 'Low Humidity',
+    HighHumidity: 'High Humidity',
+    Alert: 'Alert'
   };
 } 

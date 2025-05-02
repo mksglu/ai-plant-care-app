@@ -1,7 +1,13 @@
 import { getPlantById } from '../../../domains/plant/actions/plant';
-import { getPlantHealth, HealthStatus } from '../../../domains/health/actions/health';
+import { getPlantHealth } from '../../../domains/health/actions/health';
 import Link from 'next/link';
 import RefreshAnalysisButton from '../../../domains/health/components/refresh-analysis-button';
+import { DeletePlantButton } from '../../../domains/plant/components/delete-plant-button';
+import { HealthHistoryChart } from '../../../domains/health/components/health-history-chart';
+import { DateRangeSelector } from '../../../domains/health/components/date-range-selector';
+
+// Define HealthStatus locally
+type HealthStatus = 'Good' | 'Needs Water' | 'Too Much Water' | 'Low Humidity' | 'High Humidity' | 'Alert';
 
 // Helper function to generate dates for default view
 function getDateRange(daysBack = 14) {
@@ -19,10 +25,14 @@ function getDateRange(daysBack = 14) {
 interface PlantDetailParams {
   params: {
     id: string;
-  }
+  };
+  searchParams?: {
+    start?: string;
+    end?: string;
+  };
 }
 
-export default async function PlantDetail({ params }: PlantDetailParams) {
+export default async function PlantDetail({ params, searchParams = {} }: PlantDetailParams) {
   const { id } = params;
   const plant = await getPlantById(Number(id));
   
@@ -39,8 +49,10 @@ export default async function PlantDetail({ params }: PlantDetailParams) {
     );
   }
   
-  // Get default date range (last 14 days)
-  const { startDate, endDate } = getDateRange();
+  // Get date range from URL or use default
+  const defaultDateRange = getDateRange();
+  const startDate = searchParams?.start || defaultDateRange.startDate;
+  const endDate = searchParams?.end || defaultDateRange.endDate;
   
   // Only try to fetch health data if plant has required fields
   let healthData = null;
@@ -95,7 +107,18 @@ export default async function PlantDetail({ params }: PlantDetailParams) {
       <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
         <div className="flex justify-between items-start mb-4">
           <h1 className="text-3xl font-bold">{plant.name}</h1>
-          <button className="text-gray-600 hover:text-gray-800">Edit</button>
+          <div className="flex items-center space-x-2">
+            <Link href={`/?edit=${plant.id}`} className="text-gray-600 hover:text-gray-800">
+              Edit
+            </Link>
+            <DeletePlantButton
+              plantId={plant.id}
+              plantName={plant.name}
+              variant="ghost"
+              className="text-red-600 hover:text-red-800"
+              redirectPath="/"
+            />
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -113,7 +136,7 @@ export default async function PlantDetail({ params }: PlantDetailParams) {
               </li>
               <li>
                 <span className="font-medium">Location:</span> 
-                {`${plant.latitude.toFixed(4)}, ${plant.longitude.toFixed(4)}`}
+                {`${Number(plant.latitude).toFixed(4)}, ${Number(plant.longitude).toFixed(4)}`}
               </li>
             </ul>
           </div>
@@ -174,16 +197,19 @@ export default async function PlantDetail({ params }: PlantDetailParams) {
             {/* Summary section */}
             <div>
               <h3 className="font-medium mb-2">Summary</h3>
-              <p className="text-gray-700">{healthData.aiAnalysis.summary}</p>
+              <p className="text-gray-700">{healthData.aiAnalysis.summary || 'No AI analysis summary available.'}</p>
             </div>
             
             {/* Recommendations section */}
             <div>
               <h3 className="font-medium mb-2">Recommendations</h3>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
-                {healthData.aiAnalysis.recommendations.map((rec, index) => (
-                  <li key={index}>{rec}</li>
-                ))}
+                {Array.isArray(healthData.aiAnalysis.recommendations) 
+                  ? healthData.aiAnalysis.recommendations.map((rec, index) => (
+                      <li key={index}>{rec}</li>
+                    ))
+                  : <li>No specific recommendations available.</li>
+                }
               </ul>
             </div>
             
@@ -193,15 +219,15 @@ export default async function PlantDetail({ params }: PlantDetailParams) {
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="flex items-center mb-2">
                   <span className="font-medium">Health Trend:</span>
-                  <span className={`ml-2 capitalize ${getTrendColor(healthData.aiAnalysis.predictionNextWeek.healthTrend)}`}>
-                    {healthData.aiAnalysis.predictionNextWeek.healthTrend}
+                  <span className={`ml-2 capitalize ${getTrendColor(healthData.aiAnalysis.predictionNextWeek?.healthTrend || 'stable')}`}>
+                    {healthData.aiAnalysis.predictionNextWeek?.healthTrend || 'stable'}
                   </span>
                 </div>
                 <div className="flex items-center mb-3">
                   <span className="font-medium">Expected Score:</span>
-                  <span className="ml-2">{healthData.aiAnalysis.predictionNextWeek.expectedScore}/100</span>
+                  <span className="ml-2">{healthData.aiAnalysis.predictionNextWeek?.expectedScore || 'N/A'}/100</span>
                 </div>
-                <p className="text-sm text-gray-700">{healthData.aiAnalysis.predictionNextWeek.explanation}</p>
+                <p className="text-sm text-gray-700">{healthData.aiAnalysis.predictionNextWeek?.explanation || 'No prediction explanation available.'}</p>
               </div>
             </div>
             
@@ -209,17 +235,20 @@ export default async function PlantDetail({ params }: PlantDetailParams) {
             <div>
               <h3 className="font-medium mb-2">Potential Issues</h3>
               <div className="space-y-3">
-                {healthData.aiAnalysis.potentialIssues.map((issue, index) => (
-                  <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex justify-between mb-2">
-                      <span className="font-medium">{issue.issue}</span>
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs capitalize ${getSeverityColor(issue.severity)}`}>
-                        {issue.severity} severity
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-700">{issue.remedy}</p>
-                  </div>
-                ))}
+                {Array.isArray(healthData.aiAnalysis.potentialIssues) 
+                  ? healthData.aiAnalysis.potentialIssues.map((issue, index) => (
+                      <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex justify-between mb-2">
+                          <span className="font-medium">{issue.issue}</span>
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs capitalize ${getSeverityColor(issue.severity)}`}>
+                            {issue.severity} severity
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700">{issue.remedy}</p>
+                      </div>
+                    ))
+                  : <div className="bg-gray-50 p-4 rounded-lg">No specific issues identified.</div>
+                }
               </div>
             </div>
             
@@ -229,15 +258,15 @@ export default async function PlantDetail({ params }: PlantDetailParams) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-gray-50 p-3 rounded-lg">
                   <span className="block font-medium mb-1">Water</span>
-                  <p className="text-sm text-gray-700">{healthData.aiAnalysis.optimalConditions.waterAmount}</p>
+                  <p className="text-sm text-gray-700">{healthData.aiAnalysis.optimalConditions?.waterAmount || 'Not specified'}</p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg">
                   <span className="block font-medium mb-1">Humidity</span>
-                  <p className="text-sm text-gray-700">{healthData.aiAnalysis.optimalConditions.humidity}</p>
+                  <p className="text-sm text-gray-700">{healthData.aiAnalysis.optimalConditions?.humidity || 'Not specified'}</p>
                 </div>
                 <div className="col-span-full bg-gray-50 p-3 rounded-lg">
                   <span className="block font-medium mb-1">Additional Notes</span>
-                  <p className="text-sm text-gray-700">{healthData.aiAnalysis.optimalConditions.notes}</p>
+                  <p className="text-sm text-gray-700">{healthData.aiAnalysis.optimalConditions?.notes || 'No additional notes available.'}</p>
                 </div>
               </div>
             </div>
@@ -257,23 +286,28 @@ export default async function PlantDetail({ params }: PlantDetailParams) {
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-medium">Date Range</h3>
-                <button className="text-sm text-blue-600 hover:text-blue-800">Change Dates</button>
               </div>
               <div className="flex gap-2">
-                <div className="border rounded px-3 py-1.5 text-sm flex-1 text-center">
-                  {new Date(healthData.startDate).toLocaleDateString()}
-                </div>
-                <span className="self-center">to</span>
-                <div className="border rounded px-3 py-1.5 text-sm flex-1 text-center">
-                  {new Date(healthData.endDate).toLocaleDateString()}
-                </div>
+                <DateRangeSelector
+                  plantId={plant.id}
+                  startDate={healthData.startDate}
+                  endDate={healthData.endDate}
+                />
               </div>
             </div>
             
             <div className="h-64 bg-gray-50 border rounded-lg flex items-center justify-center">
-              <p className="text-gray-600">
-                Chart component will be implemented here
-              </p>
+              {healthData.dailyData.length > 0 ? (
+                <HealthHistoryChart 
+                  data={healthData.dailyData}
+                  expectedHumidity={plant.expected_humidity}
+                  expectedWaterNeedDaily={plant.weekly_water_need ? plant.weekly_water_need / 7 : null}
+                />
+              ) : (
+                <p className="text-gray-600">
+                  No data available for this period
+                </p>
+              )}
             </div>
             
             <div className="mt-6 overflow-x-auto">
@@ -297,8 +331,8 @@ export default async function PlantDetail({ params }: PlantDetailParams) {
                         </span>
                       </td>
                       <td className="py-2 px-4">{Math.round(day.score)}/100</td>
-                      <td className="py-2 px-4">{day.precipitation.toFixed(1)}mm</td>
-                      <td className="py-2 px-4">{day.humidity.toFixed(1)}%</td>
+                      <td className="py-2 px-4">{Number(day.precipitation).toFixed(1)}mm</td>
+                      <td className="py-2 px-4">{Number(day.humidity).toFixed(1)}%</td>
                     </tr>
                   ))}
                 </tbody>

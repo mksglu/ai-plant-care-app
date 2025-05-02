@@ -1,7 +1,5 @@
-'use client';
-
-import React, { useTransition, useState } from 'react';
-import { refreshPlantAIAnalysis } from '../actions/health';
+import React from 'react';
+// import { refreshPlantAIAnalysis } from '../actions/health';
 
 interface RefreshAnalysisButtonProps {
   plantId: number;
@@ -10,24 +8,24 @@ interface RefreshAnalysisButtonProps {
 }
 
 export default function RefreshAnalysisButton({ plantId, startDate, endDate }: RefreshAnalysisButtonProps) {
-  const [isPending, startTransition] = useTransition();
-  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  // const [isPending, startTransition] = useTransition();
+  // const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   
-  const handleRefresh = () => {
-    startTransition(async () => {
-      try {
-        // This will trigger a fresh AI analysis and update the UI
-        await refreshPlantAIAnalysis(plantId, startDate, endDate);
-        setLastRefreshed(new Date());
-      } catch (error) {
-        console.error('Error refreshing analysis:', error);
-      }
-    });
-  };
+  // const handleRefresh = () => {
+  //   startTransition(async () => {
+  //     try {
+  //       // This will trigger a fresh AI analysis and update the UI
+  //       await refreshPlantAIAnalysis(plantId, startDate, endDate);
+  //       setLastRefreshed(new Date());
+  //     } catch (error) {
+  //       console.error('Error refreshing analysis:', error);
+  //     }
+  //   });
+  // };
   
   return (
     <div className="flex flex-col items-end">
-      <button
+      {/* <button
         onClick={handleRefresh}
         disabled={isPending}
         className={`flex items-center px-3 py-1.5 rounded text-sm ${
@@ -57,7 +55,7 @@ export default function RefreshAnalysisButton({ plantId, startDate, endDate }: R
         <span className="text-xs text-gray-500 mt-1">
           Last refreshed: {lastRefreshed.toLocaleTimeString()}
         </span>
-      )}
+      )} */}
     </div>
   );
 } 

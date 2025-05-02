@@ -1,9 +1,14 @@
-import { HealthAssessment, DailyHealthData } from '../actions/health';
+'use server';
+
+import { getHealthAssessmentType } from '../actions/health';
 import { Plant } from '../../plant/actions/plant';
 import { z } from 'zod';
 
-// Define the Zod schema for AI analysis response validation
-export const AIAnalysisSchema = z.object({
+// Get the HealthAssessment type from the return value of getHealthAssessmentType
+type HealthAssessment = NonNullable<Awaited<ReturnType<typeof getHealthAssessmentType>>>;
+
+// Define the Zod schema for AI analysis response validation (not exported)
+const AIAnalysisSchema = z.object({
   summary: z.string(),
   recommendations: z.array(z.string()),
   predictionNextWeek: z.object({
@@ -23,21 +28,28 @@ export const AIAnalysisSchema = z.object({
   }),
 });
 
-// Export the TypeScript type derived from the Zod schema
-export type AIAnalysisResponse = z.infer<typeof AIAnalysisSchema>;
+// TypeScript type derived from the Zod schema (not exported)
+type AIAnalysisResponse = z.infer<typeof AIAnalysisSchema>;
+
+// Export the type via an async function to be compatible with 'use server'
+export async function getAIAnalysisResponseType(): Promise<AIAnalysisResponse | null> {
+  return null; // Just returns null, this is only for type exporting
+}
 
 /**
  * Formats plant and health data for AI analysis
  */
-function formatDataForAI(plant: Plant, healthData: HealthAssessment): string {
-  const dailyDataSample = healthData.dailyData.slice(0, 7).map(day => ({
+async function formatDataForAI(plant: Plant, healthData: HealthAssessment): Promise<string> {
+  type DailyData = HealthAssessment['dailyData'][number];
+  
+  const dailyDataSample = healthData.dailyData.slice(0, 7).map((day: DailyData) => ({
     date: day.date,
-    precipitation: day.precipitation.toFixed(1),
-    humidity: day.humidity.toFixed(1),
+    precipitation: Number(day.precipitation).toFixed(1),
+    humidity: Number(day.humidity).toFixed(1),
     healthScore: Math.round(day.score),
     status: day.status,
-    waterDeviation: day.waterDeviation.toFixed(1) + '%',
-    humidityDeviation: day.humidityDeviation.toFixed(1) + '%'
+    waterDeviation: Number(day.waterDeviation).toFixed(1) + '%',
+    humidityDeviation: Number(day.humidityDeviation).toFixed(1) + '%'
   }));
   
   const plantData = {
@@ -63,8 +75,8 @@ function formatDataForAI(plant: Plant, healthData: HealthAssessment): string {
 /**
  * Creates a prompt for the Gemini AI to analyze plant health
  */
-function createPrompt(plant: Plant, healthData: HealthAssessment): string {
-  const formattedData = formatDataForAI(plant, healthData);
+async function createPrompt(plant: Plant, healthData: HealthAssessment): Promise<string> {
+  const formattedData = await formatDataForAI(plant, healthData);
   
   return `As an expert botanist and plant health specialist, analyze the following plant health data and provide comprehensive insights.
 
@@ -126,7 +138,7 @@ export async function analyzeHealthWithAI(
   const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
   
   try {
-    const prompt = createPrompt(plant, healthData);
+    const prompt = await createPrompt(plant, healthData);
     
     console.log('Requesting Gemini AI analysis...');
     

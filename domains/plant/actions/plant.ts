@@ -3,7 +3,6 @@
 import postgres from 'postgres';
 import { plantSchema, PlantFormValues } from '../schemas/plant';
 
-// Get the database connection
 const sql = postgres(process.env.DATABASE_URL || '', {
   ssl: 'require',
 });
@@ -21,12 +20,8 @@ export type Plant = {
   updated_at: Date;
 };
 
-// Type for creating a new plant
 export type PlantInput = Omit<Plant, 'id' | 'created_at' | 'updated_at'>;
 
-/**
- * Get all plants
- */
 export async function getPlants(): Promise<Plant[]> {
   console.log('Called getPlants');
   try {
@@ -42,11 +37,8 @@ export async function getPlants(): Promise<Plant[]> {
   }
 }
 
-/**
- * Get a plant by ID
- */
+
 export async function getPlantById(id: number): Promise<Plant | null> {
-  console.log('Called getPlantById with id:', id);
   try {
     const plants = await Promise.resolve(sql<Plant[]>`
       SELECT * FROM plant
@@ -60,11 +52,7 @@ export async function getPlantById(id: number): Promise<Plant | null> {
   }
 }
 
-/**
- * Create a new plant with zod validation
- */
 export async function createPlant(plantData: PlantFormValues): Promise<Plant> {
-  console.log('Called createPlant with data:', plantData);
   try {
     // Validate with zod schema
     const validated = plantSchema.parse(plantData);
@@ -103,9 +91,6 @@ export async function createPlant(plantData: PlantFormValues): Promise<Plant> {
   }
 }
 
-/**
- * Update an existing plant
- */
 export async function updatePlant(id: number, plantData: Partial<PlantFormValues>): Promise<Plant | null> {
   console.log('Called updatePlant with id:', id, 'and data:', plantData);
   try {
@@ -118,58 +103,54 @@ export async function updatePlant(id: number, plantData: Partial<PlantFormValues
     // Validate with zod schema (partial validation)
     const validatedFields = plantSchema.partial().parse(plantData);
     
-    // Build the dynamic update query
-    const updates = [];
-    const values = [];
+    // Create an update object instead of separate arrays
+    const updateObject: Record<string, any> = {};
     
     if (validatedFields.name !== undefined) {
-      updates.push('name');
-      values.push(validatedFields.name);
+      updateObject.name = validatedFields.name;
     }
     
     if (validatedFields.type !== undefined) {
-      updates.push('type');
-      values.push(validatedFields.type === '' ? null : validatedFields.type);
+      updateObject.type = validatedFields.type === '' ? null : validatedFields.type;
     }
     
     if (validatedFields.weekly_water_need !== undefined) {
-      updates.push('weekly_water_need');
-      values.push(validatedFields.weekly_water_need);
+      updateObject.weekly_water_need = validatedFields.weekly_water_need;
     }
     
     if (validatedFields.expected_humidity !== undefined) {
-      updates.push('expected_humidity');
-      values.push(validatedFields.expected_humidity);
+      updateObject.expected_humidity = validatedFields.expected_humidity;
     }
     
     if (validatedFields.latitude !== undefined) {
-      updates.push('latitude');
-      values.push(validatedFields.latitude);
+      updateObject.latitude = validatedFields.latitude;
     }
     
     if (validatedFields.longitude !== undefined) {
-      updates.push('longitude');
-      values.push(validatedFields.longitude);
+      updateObject.longitude = validatedFields.longitude;
     }
     
     // Add updated_at
-    updates.push('updated_at');
-    values.push(new Date());
+    updateObject.updated_at = new Date();
     
-    if (updates.length === 0) {
+    if (Object.keys(updateObject).length === 0) {
+      console.log('No fields to update for plant:', id);
       return existingPlant; // Nothing to update
     }
     
-    // Dynamically build the SET clause using postgres-js syntax
-    const setElements = updates.map((field, i) => `${field} = $${i + 1}`);
+    console.log('Update object:', updateObject);
     
-    // Execute the update using tagged template literal
-    const plants = await Promise.resolve(sql<Plant[]>`
-      UPDATE plant
-      SET ${sql(setElements.join(', '))}
-      WHERE id = ${id}
-      RETURNING *
-    `);
+    // Using sql.begin for transaction and direct object assignment for safer SQL generation
+    const plants = await sql.begin(async (sql) => {
+      const result = await sql<Plant[]>`
+        UPDATE plant
+        SET ${sql(updateObject)}
+        WHERE id = ${id}
+        RETURNING *
+      `;
+      console.log('Update successful, returned rows:', result.length);
+      return result;
+    });
     
     return plants[0];
   } catch (error) {
@@ -178,12 +159,16 @@ export async function updatePlant(id: number, plantData: Partial<PlantFormValues
   }
 }
 
-/**
- * Delete a plant by ID
- */
 export async function deletePlant(id: number): Promise<boolean> {
   console.log('Called deletePlant with id:', id);
   try {
+    // First delete related health analysis records
+    await Promise.resolve(sql`
+      DELETE FROM health_analysis
+      WHERE plant_id = ${id}
+    `);
+    
+    // Then delete the plant itself
     const result = await Promise.resolve(sql`
       DELETE FROM plant
       WHERE id = ${id}

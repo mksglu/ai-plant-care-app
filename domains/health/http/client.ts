@@ -1,8 +1,3 @@
-/**
- * Open-Meteo API client for the health domain
- * Used to fetch historical weather data for plant health assessment
- */
-
 const OPEN_METEO_API_URL = process.env.OPEN_METEO_API_URL || 'https://historical-forecast-api.open-meteo.com/v1/forecast';
 
 // Types based on the Open-Meteo API response
