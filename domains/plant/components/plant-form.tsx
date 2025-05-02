@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import { createPlant, updatePlant } from '../actions/plant';
 import { plantSchema, PlantFormValues } from '../schemas/plant';
+import { LocationSearch } from './location-search';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,57 @@ export function PlantForm({ initialData, onSuccess, onCancel }: PlantFormProps) 
       longitude: initialData?.longitude || -74.0060,
     },
   });
+  
+  // Format the location display string from coordinates
+  const [locationDisplay, setLocationDisplay] = useState<string>('');
+  
+  useEffect(() => {
+    // If we have coordinates, try to get location name
+    const fetchLocationName = async () => {
+      const lat = initialData?.latitude;
+      const lon = initialData?.longitude;
+      
+      if (lat && lon) {
+        try {
+          // Using Nominatim API for reverse geocoding
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+            {
+              headers: {
+                'User-Agent': 'PlantCareApp/1.0'
+              }
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.display_name) {
+              setLocationDisplay(data.display_name);
+            } else {
+              // If no display name, fall back to coordinates
+              setLocationDisplay(`${lat}, ${lon}`);
+            }
+          } else {
+            // API returned an error - fall back to coordinates
+            setLocationDisplay(`${lat}, ${lon}`);
+          }
+        } catch (error) {
+          console.error('Error fetching location name:', error);
+          // On error, fall back to displaying coordinates
+          setLocationDisplay(`${lat}, ${lon}`);
+        }
+      }
+    };
+    
+    fetchLocationName();
+  }, [initialData?.latitude, initialData?.longitude]);
+  
+  // Handle location selection from the search component
+  const handleLocationSelect = (location: { latitude: number; longitude: number; name: string }) => {
+    form.setValue('latitude', location.latitude);
+    form.setValue('longitude', location.longitude);
+    setLocationDisplay(location.name);
+  };
   
   const onSubmit = async (data: PlantFormValues) => {
     setIsSubmitting(true);
@@ -171,53 +223,61 @@ export function PlantForm({ initialData, onSuccess, onCancel }: PlantFormProps) 
         <div className="space-y-1.5">
           <FormLabel className="text-sm font-medium text-neutral-700 block">Location</FormLabel>
           <FormDescription className="text-xs text-neutral-500">
-            Used for historical weather data. Right-click on Google Maps &gt; &quot;What&apos;s here?&quot; to find coordinates.
+            Used for historical weather data.
           </FormDescription>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="latitude"
-            render={({ field: { value, onChange, ...field } }) => (
-              <FormItem>
-                <FormLabel className="text-xs font-medium text-neutral-500 block mb-1">Latitude</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="any"
-                    placeholder="e.g., 40.7128"
-                    className="h-10 rounded-lg border-neutral-300 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus-visible:border-blue-500"
-                    value={value}
-                    onChange={(e) => onChange(parseFloat(e.target.value))}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage className="text-xs" />
-              </FormItem>
-            )}
+        
+        <div className="space-y-2">
+          <LocationSearch 
+            onLocationSelect={handleLocationSelect} 
+            defaultValue={locationDisplay}
           />
           
-          <FormField
-            control={form.control}
-            name="longitude"
-            render={({ field: { value, onChange, ...field } }) => (
-              <FormItem>
-                <FormLabel className="text-xs font-medium text-neutral-500 block mb-1">Longitude</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="any"
-                    placeholder="e.g., -74.0060"
-                    className="h-10 rounded-lg border-neutral-300 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus-visible:border-blue-500"
-                    value={value}
-                    onChange={(e) => onChange(parseFloat(e.target.value))}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage className="text-xs" />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="latitude"
+              render={({ field: { value, onChange, ...field } }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-medium text-neutral-500 block mb-1">Latitude</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="any"
+                      placeholder="e.g., 40.7128"
+                      className="h-10 rounded-lg border-neutral-300 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus-visible:border-blue-500"
+                      value={value}
+                      onChange={(e) => onChange(parseFloat(e.target.value))}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="longitude"
+              render={({ field: { value, onChange, ...field } }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-medium text-neutral-500 block mb-1">Longitude</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="any"
+                      placeholder="e.g., -74.0060"
+                      className="h-10 rounded-lg border-neutral-300 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus-visible:border-blue-500"
+                      value={value}
+                      onChange={(e) => onChange(parseFloat(e.target.value))}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
         
         <div className="flex justify-end space-x-3 pt-4">

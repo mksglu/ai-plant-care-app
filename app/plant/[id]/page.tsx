@@ -22,18 +22,12 @@ function getDateRange(daysBack = 14) {
   };
 }
 
-interface PlantDetailParams {
-  params: {
-    id: string;
-  };
-  searchParams?: {
-    start?: string;
-    end?: string;
-  };
-}
-
-export default async function PlantDetail({ params, searchParams = {} }: PlantDetailParams) {
-  const { id } = params;
+export default async function PlantDetail(props: {
+  params: { id: string };
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
+  const { id } = props.params;
+  const searchParams = props.searchParams || {};
   const plant = await getPlantById(Number(id));
   
   if (!plant) {
@@ -51,8 +45,8 @@ export default async function PlantDetail({ params, searchParams = {} }: PlantDe
   
   // Get date range from URL or use default
   const defaultDateRange = getDateRange();
-  const startDate = searchParams?.start || defaultDateRange.startDate;
-  const endDate = searchParams?.end || defaultDateRange.endDate;
+  const startDate = typeof searchParams.start === 'string' ? searchParams.start : defaultDateRange.startDate;
+  const endDate = typeof searchParams.end === 'string' ? searchParams.end : defaultDateRange.endDate;
   
   // Only try to fetch health data if plant has required fields
   let healthData = null;

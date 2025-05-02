@@ -246,24 +246,24 @@ export function PlantListClient({ initialPlants }: PlantListClientProps) {
       </p>
       <Button 
         onClick={handleAddClick} 
-        className="h-10 px-5 font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-md"
+        className="bg-white hover:bg-gray-50 text-gray-800 rounded-full px-4 py-2 h-9 border shadow-sm flex items-center"
       >
-        <Plus className="mr-2 h-4 w-4" />
-        Add Your First Plant
+        <Plus className="h-4 w-4 mr-1" />
+        <span>Add Your First Plant</span>
       </Button>
     </div>
   );
 
   return (
     <div className="py-14 px-4 md:px-8 max-w-7xl mx-auto">
-      <div className="flex flex-row items-center justify-between mb-8">
-        <div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 mb-8">
+        <div className="mb-4 sm:mb-0">
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Plant Dashboard</h1>
           <p className="text-base text-slate-600 mt-2">Monitor health, analyze growth patterns, and optimize care for your plants</p>
         </div>
         <Button 
           onClick={handleAddClick}
-          className="bg-white hover:bg-gray-50 text-gray-800 rounded-full px-4 py-2 h-9 border shadow-sm flex items-center space-x-1"
+          className="bg-white hover:bg-gray-50 text-gray-800 rounded-full px-4 py-2 h-9 border shadow-sm flex items-center self-end sm:self-auto"
         >
           <Plus className="h-4 w-4 mr-1" />
           <span>Add New Plant</span>
