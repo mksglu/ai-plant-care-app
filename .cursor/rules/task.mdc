@@ -1,0 +1,60 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Rule Name: Task
+Description: 
+Software Engineer Assignment
+This assignment is designed to assess your full-stack development skills by leveraging a Weather API to
+build a meteorological research tool for plant care. The objective is to build a user-friendly application that
+manages end-to-end plant care for a given-user using React and Typescript.
+Requirements
+1. Basic Backend
+1. Write a basic backend that can store plant information
+2. Display all brands for the user on the front end
+3. This application should support world-wide plant-care
+2. Add/Edit Brands
+1. Users should be able to add new plants
+2. Users can delete or edit existing plants.
+3. Plants have the following metadata: Type of Plant, Weekly Water Need, Expected
+Relative Humidity (%)
+3. Front end Display Functionality
+1. Users must be able to see an automatic evaluation of their plants health – based on the
+expected water amount/humidity vs. the real rain amount/humidity
+1. You can use any method for this, but here is a free-API: https://open-meteo.com/
+en/docs/historical-forecast-api
+2. Users must be able to see a historical chart of the health of their plants
+3. If the user edits the plants metadata the historical chart must display a change in
+“expected” water or humidity
+4. Allow users to see how well their plant has done at specific periods of times with an
+ability to select unique date ranges
+Bonus Features
+1. Produce support for multiple house-holds (meaning user can have plants in a variety of locations)
+2. Add searching and filtering based on metadata and name
+3. Provide pagination for customer with over 15 plants
+Expectations
+Completing every requirement of the assignment is not mandatory. The key objective is to showcase your
+ability to deliver innovative and value-added solutions. The focus should not be limited to merely fulfilling
+the listed requirements but rather on demonstrating creativity and developing exceptional solutions.
+Key Guidelines:
+1. Technology Flexibility: You may use any technology of your choice to complete the assignment,
+allowing you to leverage your strengths and preferred tools.
+2. Docker Usage: Using Docker is highly recommended to ensure consistency, ease of
+deployment, and scalability.
+3. Documentation: Provide a clear and concise README document that explains:
+◦ How the code works.
+◦ Instructions for setting up and running the project.
+◦ Any design decisions or key considerations in your implementation.
+1. Commit Quality: Ensure that commits and commit messages are neat, descriptive,
+and reflect the progress and rationale behind your work.
+Key Criteria for Evaluation:
+1. Innovation: Prioritize unique and impactful approaches over simply meeting all technical
+requirements.
+2. Scalability: Solutions that are scalable and designed to handle growth will be highly regarded.
+3. Efficiency: Deliver performant and optimized implementations for both the back end and front
+end.
+4. Value Addition: Enhance the assignment with features or improvements that go beyond the
+original scope, adding tangible value.
+5. Time Management: Complete the assignment within 6-8 hours, focusing on delivering a polished
+and funct

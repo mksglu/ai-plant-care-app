@@ -1,0 +1,33 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Rule Name: Database Schemas
+Description:
+# Initial Database Schema (MVP)
+
+This file documents the database schemas used in the project.
+
+## Plant Table
+
+```sql
+CREATE TABLE plant (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(100),
+    weekly_water_need DECIMAL(5, 2), -- Assuming weekly need in Liters, e.g., 10.50 L
+    expected_humidity INT, -- Assuming percentage, e.g., 60
+    latitude DECIMAL(9, 6) NOT NULL, -- Sufficient precision for locations
+    longitude DECIMAL(9, 6) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Notes:**
+*   Column names are now in `snake_case`.
+*   `weekly_water_need`: Represents the total water needed per week (e.g., in Liters).
+*   `expected_humidity`: Represents the target relative humidity percentage.
+*   `latitude` and `longitude`: Store the geographical coordinates of the plant.
+*   `created_at` and `updated_at` are standard tracking fields.

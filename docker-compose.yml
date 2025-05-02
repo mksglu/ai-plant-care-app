@@ -1,0 +1,59 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Development service for hot-reloading
+  app-dev:
+    build:
+      context: .
+      target: deps # Stop at the dependencies stage
+    command: yarn dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=${DATABASE_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - .:/app
+      - /app/node_modules # Prevent overwriting of node_modules
+      - /app/.next # Prevent overwriting of .next
+    profiles:
+      - dev # Only start this service when explicitly specified
+
+  # Initialize database - one-off service
+  db-init:
+    build:
+      context: .
+      target: deps
+    command: >
+      sh -c "
+        echo 'Initializing database schema...' &&
+        cat domains/health/schema.sql domains/plant/schema.sql | PGPASSWORD=${DB_PASSWORD} psql -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME} -f -
+      "
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+    volumes:
+      - ./domains:/app/domains
+    profiles:
+      - db-tools # Only start when explicitly specified 

@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Rule Name: MVP Roadmap
+Description: 
+# MVP Roadmap (with Neon DB & Server Actions)
+
+This document outlines the development steps for the MVP (Minimum Viable Product) version of the plant care application, adhering to specific architectural guidelines. Each task is assigned to its relevant domain and includes both backend (BE) and frontend (FE) steps.
+
+**Architectural Rules:**
+*   **Language:** TypeScript must be used throughout the project for both frontend and backend code.
+*   **HTTP Client:** Only native `fetch` will be used. No external libraries like `axios`.
+*   **Backend Logic:** No REST APIs under `/api` directory. All backend operations will be handled via Next.js Server Actions.
+*   **External API Calls:** Requests to external services (like Open-Meteo) will be encapsulated within `http/client.ts` files located within the relevant domain's directory structure.
+*   **Data Operations:** All database interactions (Neon DB via `postgres` library) and calls to external APIs (using the `http/client.ts` structure) must be performed exclusively within Server Actions.
+*   **Action File Structure:** Each domain (`plant`, `household`, `health`) will have an `actions` directory containing a single file named after the domain (e.g., `app/domains/plant/actions/plant.ts`). This file will house all Server Actions for that domain.
+
+## Tasks
+
+**1. Basic Setup and Database Connection (Infrastructure)**
+   - **Domain:** None (General Setup)
+   - **BE:** Create a Next.js project. Configure Neon DB connection string (e.g., in `.env`). Create the basic database schema for the `plant` table using an SQL script (columns: `id`, `name`, `type`, `weekly_water_need`, `expected_humidity`, `latitude`, `longitude`, `created_at`, `updated_at` - using snake_case).
+   - **FE:** Set up the basic Next.js page structure.
+
+**2. Plant CRUD Operations (Backend via Server Actions)**
+   - **Domain:** `plant`
+   - **BE:** Implement Server Actions within `app/domains/plant/actions/plant.ts` for `Plant` records using the `postgres` library to interact with Neon DB: List all, get by ID, add, update, delete. Add basic input validation within the actions.
+
+**3. Plant Listing and Management UI (Frontend)**
+   - **Domain:** `plant`
+   - **FE:** Create a page to display the list of plants fetched by calling the list Server Action. Create modal/form components using `shadcn/ui` for adding/editing/deleting plants. Forms will invoke the corresponding Server Actions upon submission. Add basic client-side form validation.
+
+**4. Location and Weather Data Fetching (Backend via Server Actions)**
+   - **Domain:** `health` (uses data), `household` (provides location - handled within `health` action for now)
+   - **BE:** Inside `app/domains/health/actions/health.ts`, create a Server Action (parameters: plantId, startDate, endDate). This action will:
+        1. Fetch the plant's `latitude` and `longitude` from Neon DB (using `postgres` library).
+        2. Create/use `app/domains/health/http/client.ts` to encapsulate the Open-Meteo API call logic using `fetch`.
+        3. Call the Open-Meteo historical API via the `client.ts` module to get weather data (e.g., `precipitation_sum`, `relativehumidity_2m`). Add error handling. *Logging: Log the Open-Meteo request and response within the action.*
+
+**5. Basic Health Assessment (Backend via Server Actions)**
+   - **Domain:** `health`
+   - **BE:** Extend the weather data Server Action in `app/domains/health/actions/health.ts`. Implement a simple function *within the action* to compare fetched weather data with the plant's `weekly_water_need` and `expected_humidity`. Return a basic daily/weekly health status. *Logging: Log calculation inputs and output.* **Hint:** *Gemini AI calls for complex analysis would also be initiated from here.*
+
+**6. Health Status and History Chart (Frontend)**
+   - **Domain:** `health`
+   - **FE:** Display the *current* basic health status (fetched via Server Action) on the plant view (`shadcn/ui` Badge/Icon). Add a chart component (`Recharts`). Implement `shadcn/ui` Date Picker. Fetch historical health data for the selected range by calling the appropriate Server Action from `health.ts`. Display data on the chart. Ensure chart updates on date/needs change (via re-invoking Server Actions or state management).

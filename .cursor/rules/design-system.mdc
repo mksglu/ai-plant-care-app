@@ -1,0 +1,18 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Rule Name: Design System
+Description: 
+# Design System Guidelines
+
+The following design system principles will be adopted for this project:
+
+1.  **CSS Framework:** Only **Tailwind CSS** will be used for styling. Other approaches like CSS Modules, styled-components, or plain CSS should be avoided.
+2.  **UI Library:** **shadcn/ui** will be the primary choice for components. `shadcn/ui` provides reusable and accessible components built on Tailwind CSS that can be integrated into the project via copy-paste. This will enhance development speed and ensure a consistent look and feel.
+3.  **Aesthetics & Color Palette:** The overall aesthetic will draw inspiration from **Apple's design language**. This implies simplicity, readability, and user-friendly interfaces.
+    *   The color palette will lean towards neutral tones used by Apple (whites, grays, blacks) and soft, pastel colors for accents.
+    *   Whitespace will be used generously, ensuring interfaces look spacious and uncluttered.
+    *   Typography will be handled with readable and modern sans-serif fonts (e.g., Inter or San Francisco).
+4.  **Customization:** `shadcn/ui` components can be customized as needed through the `tailwind.config.js` file or directly within the component code to align with the project's aesthetic.
