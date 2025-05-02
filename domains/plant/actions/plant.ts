@@ -2,6 +2,7 @@
 
 import postgres from 'postgres';
 import { plantSchema, PlantFormValues } from '../schemas/plant';
+import { revalidatePath } from 'next/cache';
 
 const sql = postgres(process.env.DATABASE_URL || '', {
   ssl: 'require',
@@ -84,6 +85,9 @@ export async function createPlant(plantData: PlantFormValues): Promise<Plant> {
       RETURNING *
     `);
     
+    // Revalidate cache
+    revalidatePath('/', 'layout');
+    
     return plants[0];
   } catch (error) {
     console.error('Error creating plant:', error);
@@ -152,6 +156,10 @@ export async function updatePlant(id: number, plantData: Partial<PlantFormValues
       return result;
     });
     
+    // Revalidate cache
+    revalidatePath('/', 'layout');
+    revalidatePath(`/plant/${id}`, 'page');
+    
     return plants[0];
   } catch (error) {
     console.error(`Error updating plant with ID ${id}:`, error);
@@ -173,6 +181,9 @@ export async function deletePlant(id: number): Promise<boolean> {
       DELETE FROM plant
       WHERE id = ${id}
     `);
+    
+    // Revalidate cache
+    revalidatePath('/', 'layout');
     
     return result.count > 0;
   } catch (error) {
